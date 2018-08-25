@@ -16,6 +16,7 @@
 
 @property (strong, nonatomic) NSHashTable* observers;
 @property (strong, nonatomic) dispatch_queue_t queue;
+@property (assign, nonatomic) BOOL useMainDispatchForNotify;
 
 @end
 
@@ -58,9 +59,16 @@
     [invocation retainArguments];
     dispatch_sync(self.queue, ^() {
         for (id observer in self.observers) {
-            dispatch_async(dispatch_get_main_queue(), ^() {
+            
+            void (^block)(void) = ^() {
                 [self notifyObserver:observer withInvocation:invocation];
-            });
+            };
+            
+            if(self.useMainDispatchForNotify){
+                block();
+            }else{
+                dispatch_async(dispatch_get_main_queue(), block);
+            }
         }
     });
 }
